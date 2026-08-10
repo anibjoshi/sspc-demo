@@ -34,23 +34,42 @@ ask()  { # ask "question" varname (default y). Reads /dev/tty so curl|bash works
 
 cat <<'EOF'
 
-  sspc — serverless Postgres on your own machine
-  ------------------------------------------------
-  This will:
-   1. create a local kind cluster (ports bind 127.0.0.1 only)
-   2. pull ~2 GB of pinned images (first run only)
-   3. install the platform and seed a sample database
-   4. register the agent API with Claude Code / IBM Bob
-   5. open the estate UI in your browser
+  sspc — your own serverless Postgres cloud, on your laptop
+  ---------------------------------------------------------
+  Postgres, rebuilt the way the big clouds build it — except it
+  runs entirely on infrastructure you control. After this install:
 
-  First run ~5 minutes; re-runs are seconds. ./down.sh removes
-  everything. Nothing leaves your machine.
+   * Ask for a database in plain English — from Claude Code or
+     IBM Bob — and get a connection string in seconds.
+   * Idle databases cost nothing: compute shuts off when unused
+     and wakes in about a second when you connect again.
+   * Branch a live database instantly: a full copy that copies
+     nothing — perfect for risky migrations — and it cleans
+     itself up when its time-to-live expires.
+   * Attach the Postgres you already run — a VM, RDS, anywhere —
+     with one connection string: live inventory and health,
+     nothing migrated, nothing touched.
+   * Watch all of it happen live in the estate UI.
+
+  The install itself: a local kind cluster (ports bound to
+  127.0.0.1 only), ~2 GB of images on the first run (~5 minutes;
+  re-runs take seconds), a seeded sample estate, and the UI opens
+  when it finishes. Nothing leaves your machine, ever.
+  ./down.sh removes everything.
 
 EOF
 
 REG_CLAUDE=n; REG_BOB=n
-command -v claude >/dev/null && ask "Register with Claude Code when ready?" REG_CLAUDE
-[ -d "$HOME/.bob" ] && ask "Register with IBM Bob when ready?" REG_BOB
+if command -v claude >/dev/null; then
+  ask "Register with Claude Code when ready?" REG_CLAUDE
+else
+  echo "  (Claude Code not detected — install it later and re-run to register)"
+fi
+if [ -d "$HOME/.bob" ]; then
+  ask "Register with IBM Bob when ready?" REG_BOB
+else
+  ask "Register with IBM Bob when ready? (not detected — config will be written for when you install it)" REG_BOB
+fi
 
 step "preflight"
 PREFLIGHT_FAIL=0
@@ -156,8 +175,8 @@ if [ "$REG_CLAUDE" = y ] || [ "$REG_CLAUDE" = Y ]; then
   claude mcp add -s user -t http sspc "$MCP_URL" >/dev/null && ok "Claude Code registered"
 fi
 if [ "$REG_BOB" = y ] || [ "$REG_BOB" = Y ]; then
-  BOB_CFGS="$HOME/.bob/mcp.json"
-  [ -d "$HOME/.bob/settings" ] && BOB_CFGS="$BOB_CFGS $HOME/.bob/settings/mcp.json"
+  mkdir -p "$HOME/.bob/settings"
+  BOB_CFGS="$HOME/.bob/mcp.json $HOME/.bob/settings/mcp.json"
   for cfg in $BOB_CFGS; do
     [ -f "$cfg" ] || printf '{"mcpServers":{}}\n' > "$cfg"
     tmp=$(mktemp)
