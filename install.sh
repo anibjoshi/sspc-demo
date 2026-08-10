@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sspc demo installer: kind cluster + platform + MCP registration
+# sspc demo installer: kind cluster + platform + UI + MCP registration
 # registration. Usage: up.sh [--yes]   (--yes = no prompts, CI mode)
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -20,7 +20,7 @@ say() { printf '\033[1;36m== %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mFATAL: %s\033[0m\n' "$*" >&2; exit 1; }
 
 say "checking prerequisites"
-for bin in docker kind kubectl helm jq; do
+for bin in docker kind kubectl helm jq gh; do
   command -v "$bin" >/dev/null || die "$bin not found — install it first"
 done
 docker info >/dev/null 2>&1 || die "docker daemon not running"
@@ -43,9 +43,11 @@ for pin in "${PINS[@]}"; do
   tags+=("$tag")
 done
 docker image inspect "$OPERATOR_TAG" >/dev/null 2>&1 || {
-  say "pulling operator image"
-  docker pull ghcr.io/anibjoshi/sspc-operator:m1
-  docker tag ghcr.io/anibjoshi/sspc-operator:m1 "$OPERATOR_TAG"
+  say "downloading operator image (release asset)"
+  t=$(mktemp -d)
+  gh release download m1 -R anibjoshi/sspc-demo -p operator-image.tar.gz -D "$t"
+  docker load -i "$t/operator-image.tar.gz"
+  rm -rf "$t"
 }
 if docker exec sspc-control-plane crictl images 2>/dev/null | grep -q sspc-operator; then
   say "images already on the node; skipping load"
@@ -119,9 +121,11 @@ if [ -d "$HOME/.bob" ]; then
   fi
 fi
 
+[ "$YES" != "--yes" ] && command -v open >/dev/null && open "http://localhost:30080/?token=$TOKEN" || true
 cat <<EOF
 
   sspc is up.
+    UI:       http://localhost:30080/?token=$TOKEN
     try:      open Claude Code (or IBM Bob) and say "create me a postgres database"
     inspect:  kubectl -n sspc-cell get databases,branches,pods
     teardown: ./down.sh

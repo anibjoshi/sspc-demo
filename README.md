@@ -9,6 +9,8 @@ infrastructure you control. One install gives you:
   in about a second when you reconnect.
 - **Instant branches** — full copy-on-write branches of a live database in
   under two seconds; branches carry TTLs and clean up after themselves.
+- **A live estate UI** — served by the platform itself at `localhost:30080`:
+  watch databases suspend to zero pods, wake, branch, and reap in real time.
 - **Attach what you already run** — enroll any existing Postgres (a VM, RDS,
   an appliance) with just a connection string: live inventory and health,
   zero migration, zero changes to the server.
@@ -19,11 +21,11 @@ lifecycle, agent API — is what this demo shows.
 
 ## Run it
 
-Prereqs: Docker, [kind](https://kind.sigs.k8s.io), kubectl, helm, jq.
+Prereqs: Docker, [kind](https://kind.sigs.k8s.io), kubectl, helm, jq, and the `gh` CLI (authenticated).
 Optional: the `claude` CLI (Claude Code) and/or IBM Bob for the agent flow.
 
 ```sh
-git clone https://github.com/anibjoshi/sspc-demo && cd sspc-demo
+gh repo clone anibjoshi/sspc-demo && cd sspc-demo
 ./install.sh          # ~5 minutes first run; re-runs are seconds
 ```
 
@@ -40,6 +42,9 @@ Open Claude Code (or Bob) and say:
 3. Wait five minutes, then: *"Reconnect me to demo."* — watch the wake time.
 4. *"Enroll my existing postgres at postgresql://user:pass@host:5432/db and
    show me the estate."*
+
+The installer ends by opening the **estate UI** in your browser — leave it visible
+while you work: suspends, wakes, and TTL reaps happen on screen.
 
 Or by hand: `kubectl -n sspc-cell get databases,branches,enrolleddatabases`
 
