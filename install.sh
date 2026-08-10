@@ -142,8 +142,10 @@ ok "platform healthy"
 
 step "seeding the sample estate"
 mcp() { curl -sf -X POST -H "Content-Type: application/json" -d "$1" "$MCP_URL"; }
-r=$(mcp '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_database","arguments":{"name":"sample","suspend_after_seconds":120}}}' | jq -r '.result.content[0].text' | jq -r .status)
-[ "$r" = "ready" ] || die "sample database did not come up (got '$r') — check: kubectl -n sspc-cell logs deploy/sspc-operator"
+mcp '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_database","arguments":{"name":"sample","suspend_after_seconds":120}}}' >/dev/null
+# get_connection wakes it if a prior run left it suspended (idempotent re-runs)
+uri=$(mcp '{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"get_connection","arguments":{"name":"sample"}}}' | jq -r '.result.content[0].text' | jq -r '.connection_uri // empty')
+[ -n "$uri" ] || die "sample database did not come up — check: kubectl -n sspc-cell logs deploy/sspc-operator"
 kubectl -n sspc-cell exec sample -- psql -U cloud_admin -h localhost -p 55433 -d postgres -q -c \
   "create table if not exists visits(id int, note text); insert into visits select g, md5(g::text) from generate_series(1,50000) g where not exists (select 1 from visits limit 1);" >/dev/null
 mcp '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"create_branch","arguments":{"name":"sample-dev","database":"sample"}}}' >/dev/null
