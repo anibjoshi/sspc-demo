@@ -54,10 +54,50 @@ command -v claude >/dev/null && ask "Register with Claude Code when ready?" REG_
 
 step "preflight"
 PREFLIGHT_FAIL=0
-for bin in docker kind kubectl helm jq curl; do
-  command -v "$bin" >/dev/null && ok "$bin" || bad "$bin missing — install it first"
+BREW_MISSING=()
+for bin in kind kubectl helm jq; do
+  command -v "$bin" >/dev/null && ok "$bin" || { bad "$bin missing"; BREW_MISSING+=("$bin"); }
 done
-docker info >/dev/null 2>&1 && ok "docker daemon running" || bad "docker daemon not running — start Docker/colima"
+command -v curl >/dev/null && ok "curl" || bad "curl missing — install it first"
+if command -v docker >/dev/null; then ok "docker"; else
+  bad "docker missing — a human choice we won't make for you:"
+  echo "      Docker Desktop:  https://www.docker.com/products/docker-desktop"
+  echo "      or lightweight:  brew install colima docker && colima start"
+fi
+if [ ${#BREW_MISSING[@]} -gt 0 ]; then
+  if command -v brew >/dev/null; then
+    FIX=n; ask "Install missing tools now? (brew install ${BREW_MISSING[*]})" FIX
+    if [ "$FIX" = y ] || [ "$FIX" = Y ]; then
+      brew install "${BREW_MISSING[@]}"
+      PREFLIGHT_FAIL=0
+      for bin in "${BREW_MISSING[@]}"; do
+        command -v "$bin" >/dev/null && ok "$bin installed" || bad "$bin still missing"
+      done
+    else
+      echo "      install with: brew install ${BREW_MISSING[*]}"
+    fi
+  else
+    echo "      install with your package manager, e.g.: brew install ${BREW_MISSING[*]}"
+  fi
+fi
+if command -v docker >/dev/null && ! docker info >/dev/null 2>&1; then
+  STARTED=n
+  if command -v colima >/dev/null; then
+    ask "Docker daemon not running — start colima now?" S
+    if [ "$S" = y ] || [ "$S" = Y ]; then colima start && STARTED=y; fi
+  elif [ -d /Applications/Docker.app ]; then
+    ask "Docker daemon not running — launch Docker Desktop?" S
+    if [ "$S" = y ] || [ "$S" = Y ]; then
+      open -a Docker
+      printf '  waiting for the daemon'
+      for i in $(seq 1 45); do docker info >/dev/null 2>&1 && { STARTED=y; break; }; printf '.'; sleep 2; done
+      echo
+    fi
+  fi
+  docker info >/dev/null 2>&1 && ok "docker daemon running"     || bad "docker daemon not running — start Docker/colima and re-run"
+elif command -v docker >/dev/null; then
+  ok "docker daemon running"
+fi
 if ! kind get clusters 2>/dev/null | grep -qx sspc; then
   for p in 30080 30001; do
     if lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1; then bad "port $p already in use"; else ok "port $p free"; fi
