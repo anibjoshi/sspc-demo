@@ -21,11 +21,17 @@ lifecycle, agent API — is what this demo shows.
 
 ## Run it
 
-Prereqs: Docker, [kind](https://kind.sigs.k8s.io), kubectl, helm, jq, and the `gh` CLI (authenticated).
+Prereqs: Docker, [kind](https://kind.sigs.k8s.io), kubectl, helm, jq, git.
 Optional: the `claude` CLI (Claude Code) and/or IBM Bob for the agent flow.
 
 ```sh
-gh repo clone anibjoshi/sspc-demo && cd sspc-demo
+curl -fsSL https://raw.githubusercontent.com/anibjoshi/sspc-demo/main/boot.sh | bash
+```
+
+Prefer to read what you run first? Same thing, inspectably:
+
+```sh
+git clone https://github.com/anibjoshi/sspc-demo && cd sspc-demo
 ./install.sh          # ~5 minutes first run; re-runs are seconds
 ```
 
