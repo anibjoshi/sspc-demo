@@ -29,7 +29,7 @@ gh repo clone anibjoshi/sspc-demo && cd sspc-demo
 ./install.sh          # ~5 minutes first run; re-runs are seconds
 ```
 
-The installer creates a local kind cluster, installs the platform, runs a
+Opening this folder in IBM Bob picks up the MCP server automatically (project-scope `.bob/mcp.json`). The installer creates a local kind cluster, installs the platform, runs a
 smoke test, and (with your consent) registers the MCP server with Claude
 Code and IBM Bob.
 

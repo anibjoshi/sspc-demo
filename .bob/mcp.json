@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "sspc": {
+      "type": "streamable-http",
+      "url": "http://localhost:30080/mcp",
+      "alwaysAllow": [],
+      "disabled": false
+    }
+  }
+}
