@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sspc demo installer: kind cluster + platform + UI + MCP registration
+# sspc one-command install (RFC 012 B0): kind cluster + platform + MCP
 # registration. Usage: up.sh [--yes]   (--yes = no prompts, CI mode)
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -100,19 +100,24 @@ fi
 # .bob/mcp.json (project). Our server is POST-only streamable HTTP — validated
 # with Claude Code; Bob speaks streamable-http per its docs. If Bob's client
 # turns out to require the optional GET/SSE leg, that lands server-side.
-BOB_CFG="$HOME/.bob/mcp.json"
+# Bob's docs say ~/.bob/mcp.json; real installs use ~/.bob/settings/mcp.json.
+# Write both (idempotent merges) so either version picks it up.
+BOB_CFGS="$HOME/.bob/mcp.json"
+[ -d "$HOME/.bob/settings" ] && BOB_CFGS="$BOB_CFGS $HOME/.bob/settings/mcp.json"
 if [ -d "$HOME/.bob" ]; then
   consent=y
   if [ "$YES" != "--yes" ]; then
     read -r -p "Register the sspc MCP server with IBM Bob (~/.bob/mcp.json)? [y/N] " consent
   fi
   if [ "$consent" = "y" ] || [ "$consent" = "Y" ]; then
-    [ -f "$BOB_CFG" ] || printf '{"mcpServers":{}}\n' > "$BOB_CFG"
-    tmp=$(mktemp)
-    jq --arg url "$MCP_URL" \
-      '.mcpServers.sspc = {"type": "streamable-http", "url": $url,
-                            "alwaysAllow": [], "disabled": false}' \
-      "$BOB_CFG" > "$tmp" && mv "$tmp" "$BOB_CFG"
+    for cfg in $BOB_CFGS; do
+      [ -f "$cfg" ] || printf '{"mcpServers":{}}\n' > "$cfg"
+      tmp=$(mktemp)
+      jq --arg url "$MCP_URL" \
+        '.mcpServers.sspc = {"type": "streamable-http", "url": $url,
+                              "alwaysAllow": [], "disabled": false}' \
+        "$cfg" > "$tmp" && mv "$tmp" "$cfg"
+    done
     say "registered with IBM Bob — restart the server from Bob's MCP settings to pick it up"
   else
     say "skipped IBM Bob registration"
