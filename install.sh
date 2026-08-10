@@ -20,8 +20,8 @@ IMAGE_URL="https://github.com/anibjoshi/sspc-demo/releases/download/m1/operator-
 MCP_URL=http://localhost:30080/mcp
 
 step() { printf '\033[1;36m[%3dm%02ds] %s\033[0m\n' $((($(date +%s)-T0)/60)) $((($(date +%s)-T0)%60)) "$*"; }
-ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }
-bad()  { printf '  \033[31m✗\033[0m %s\n' "$*"; PREFLIGHT_FAIL=1; }
+ok()   { printf '  \033[32m[ok]\033[0m %s\n' "$*"; }
+bad()  { printf '  \033[31m[!!]\033[0m %s\n' "$*"; PREFLIGHT_FAIL=1; }
 die()  { printf '\033[1;31mFATAL: %s\033[0m\n' "$*" >&2; exit 1; }
 ask()  { # ask "question" varname (default y). Reads /dev/tty so curl|bash works.
   local ans=y
@@ -122,7 +122,7 @@ if ! kind get clusters 2>/dev/null | grep -qx sspc; then
     if lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1; then bad "port $p already in use"; else ok "port $p free"; fi
   done
 fi
-[ "$PREFLIGHT_FAIL" = 0 ] || die "preflight failed — fix the ✗ items above and re-run"
+[ "$PREFLIGHT_FAIL" = 0 ] || die "preflight failed — fix the [!!] items above and re-run"
 
 if ! kind get clusters 2>/dev/null | grep -qx sspc; then
   step "creating kind cluster (loopback-bound port block)"
