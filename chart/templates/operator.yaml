@@ -49,10 +49,13 @@ spec:
     metadata: {labels: {app: sspc-operator}}
     spec:
       serviceAccountName: sspc-operator
+      priorityClassName: sspc-cell
       containers:
       - name: operator
         image: {{ .Values.images.operator }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        resources:
+          requests: {cpu: {{ .Values.cellResources.operator.cpu }}, memory: {{ .Values.cellResources.operator.memory }}}
         env:
         - name: SSPC_NAMESPACE
           valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
@@ -72,3 +75,26 @@ spec:
   selector: {app: sspc-operator}
   ports:
   - {name: mcp, port: 8080, nodePort: {{ .Values.nodePorts.mcp }}}
+---
+# Cluster-scoped: kubelet Summary API via node proxy (basic usage metrics).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: sspc-operator-nodes
+rules:
+- apiGroups: [""]
+  resources: [nodes, nodes/proxy]
+  verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sspc-operator-nodes
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sspc-operator-nodes
+subjects:
+- kind: ServiceAccount
+  name: sspc-operator
+  namespace: {{ .Release.Namespace }}

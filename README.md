@@ -7,8 +7,14 @@ infrastructure you control. One install gives you:
   Postgres database; get a connection string in seconds.
 - **Scale-to-zero** — idle databases release their compute entirely and wake
   in about a second when you reconnect.
-- **Instant branches** — full copy-on-write branches of a live database in
-  under two seconds; branches carry TTLs and clean up after themselves.
+- **Instant branches — including of the past** — full copy-on-write branches
+  of a live database in under two seconds, at the current head, at any
+  timestamp or LSN in its history ("branch it as of ten minutes ago"), or of
+  another branch. Branches carry TTLs and clean up after themselves.
+- **Real multi-tenancy behavior** — every database gets its own generated
+  credential, a configurable compute ceiling (CU), and a priority class, so
+  ceilings can oversubscribe the machine while contention follows priority.
+  The UI's ledger tile shows promised vs. physical CU live.
 - **A live estate UI** — served by the platform itself at `localhost:30080`:
   watch databases suspend to zero pods, wake, branch, and reap in real time.
 - **Attach what you already run** — enroll any existing Postgres (a VM, RDS,
@@ -45,8 +51,10 @@ Open Claude Code (or Bob) and say:
 
 1. *"Create a postgres database called demo and load 100k rows of test data."*
 2. *"Branch it and try dropping a column on the branch — is production affected?"*
-3. Wait five minutes, then: *"Reconnect me to demo."* — watch the wake time.
-4. *"Enroll my existing postgres at postgresql://user:pass@host:5432/db and
+3. *"Oops — branch demo as it was five minutes ago and check the column is
+   still there."* — a copy of the past, in about a second.
+4. Wait five minutes, then: *"Reconnect me to demo."* — watch the wake time.
+5. *"Enroll my existing postgres at postgresql://user:pass@host:5432/db and
    show me the estate."*
 
 The installer ends by opening the **estate UI** in your browser — leave it visible

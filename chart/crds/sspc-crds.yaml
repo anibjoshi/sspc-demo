@@ -26,6 +26,24 @@ spec:
         properties:
           spec:
             properties:
+              cuLimit:
+                default: 10
+                description: |-
+                  Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
+                  pool; suspended databases hold zero CU.
+                format: int64
+                type: integer
+              priority:
+                default: Standard
+                description: |-
+                  Compute priority (RFC 011 QoS classes, compute layer): under contention,
+                  CPU divides by CFS weight (higher priority = larger request fraction), and
+                  preemption/eviction takes Low first — which here is just a rude suspend.
+                enum:
+                - High
+                - Standard
+                - Low
+                type: string
               suspendAfterSeconds:
                 default: 300
                 description: Idle seconds before suspend (enforced by the operator's idle loop, P3).
@@ -113,8 +131,40 @@ spec:
         properties:
           spec:
             properties:
+              at:
+                description: |-
+                  Branch point (RFC 014 H2, executing 012's reserved `at`): an LSN
+                  ("0/1BCC200") or RFC 3339 timestamp. Absent = head of parent now.
+                nullable: true
+                type: string
+              cuLimit:
+                default: 10
+                description: |-
+                  Compute ceiling in CU (1 CU = 0.1 core). Limits may oversubscribe the
+                  pool; suspended databases hold zero CU.
+                format: int64
+                type: integer
               database:
-                description: Name of the parent Database (same namespace).
+                description: |-
+                  Name of the owning Database (same namespace) — always the root of the
+                  branch tree, even when branching from another branch.
+                type: string
+              parent:
+                description: |-
+                  Optional parent Branch (same database): branch-of-branch (RFC 014 H2).
+                  Absent = branch directly off the database.
+                nullable: true
+                type: string
+              priority:
+                default: Standard
+                description: |-
+                  Compute priority (RFC 011 QoS classes, compute layer): under contention,
+                  CPU divides by CFS weight (higher priority = larger request fraction), and
+                  preemption/eviction takes Low first — which here is just a rude suspend.
+                enum:
+                - High
+                - Standard
+                - Low
                 type: string
               suspendAfterSeconds:
                 default: 300
@@ -122,7 +172,6 @@ spec:
                 format: int64
                 type: integer
               ttlSeconds:
-                description: 'Branch point: head-of-parent only in M1 (`at` reserved, RFC 012).'
                 format: int64
                 nullable: true
                 type: integer
