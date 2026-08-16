@@ -15,8 +15,8 @@ PINS=(
   "quay.io/minio/minio@sha256:df7363871efee5192fb5510ee80e10bb8c5cdc45c9301a825302b1d52c60ba64|quay.io/minio/minio:RELEASE.2022-10-20T00-55-09Z"
   "busybox@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662|busybox:1.36"
 )
-OPERATOR_TAG=sspc-operator:m15
-IMAGE_URL="https://github.com/anibjoshi/sspc-demo/releases/download/m1.5/operator-image.tar.gz"
+OPERATOR_TAG=sspc-operator:m151
+IMAGE_URL="https://github.com/anibjoshi/sspc-demo/releases/download/m1.5.1/operator-image.tar.gz"
 MCP_URL=http://localhost:30080/mcp
 
 step() { printf '\033[1;36m[%3dm%02ds] %s\033[0m\n' $((($(date +%s)-T0)/60)) $((($(date +%s)-T0)%60)) "$*"; }
@@ -142,7 +142,7 @@ docker image inspect "$OPERATOR_TAG" >/dev/null 2>&1 || {
   step "downloading the sspc operator (~40 MB)"
   t=$(mktemp -d); curl -fsSL "$IMAGE_URL" -o "$t/img.tar.gz"; docker load -qi "$t/img.tar.gz" >/dev/null; rm -rf "$t"
 }
-if ! docker exec sspc-control-plane crictl images 2>/dev/null | grep sspc-operator | grep -q m15; then
+if ! docker exec sspc-control-plane crictl images 2>/dev/null | grep sspc-operator | grep -q m151; then
   step "loading images into the cluster"
   tar=$(mktemp -d)/images.tar
   docker save --platform linux/arm64 -o "$tar" "${tags[@]}" "$OPERATOR_TAG" 2>/dev/null || docker save -o "$tar" "${tags[@]}" "$OPERATOR_TAG"

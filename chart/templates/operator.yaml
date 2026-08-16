@@ -46,21 +46,43 @@ spec:
   replicas: 1
   selector: {matchLabels: {app: sspc-operator}}
   template:
-    metadata: {labels: {app: sspc-operator}}
+    metadata:
+      labels: {app: sspc-operator}
+      annotations:
+        sspc.io/image-digest: {{ .Values.images.operator.digest | quote }}
     spec:
       serviceAccountName: sspc-operator
+      # The ONLY API-token consumer in the namespace — explicit so the
+      # exception is visible.
+      automountServiceAccountToken: true
       priorityClassName: sspc-cell
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
       containers:
       - name: operator
-        image: {{ .Values.images.operator }}
+        image: {{ .Values.images.operator.name }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          readOnlyRootFilesystem: true
+        # The MCP/UI listener doubles as the health surface: it serves only
+        # after the runtime is up, and a wedged runtime stops answering.
+        readinessProbe:
+          httpGet: {path: /, port: 8080}
+          periodSeconds: 5
+        livenessProbe:
+          httpGet: {path: /, port: 8080}
+          initialDelaySeconds: 10
+          periodSeconds: 15
         resources:
           requests: {cpu: {{ .Values.cellResources.operator.cpu }}, memory: {{ .Values.cellResources.operator.memory }}}
         env:
         - name: SSPC_NAMESPACE
           valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
         - {name: SSPC_STORCON_URL, value: "http://storage-controller:1234"}
-        - {name: SSPC_COMPUTE_IMAGE, value: {{ .Values.images.compute | quote }}}
+        - {name: SSPC_COMPUTE_IMAGE, value: {{ .Values.images.compute.name | quote }}}
         - {name: SSPC_IMAGE_PULL_POLICY, value: {{ .Values.imagePullPolicy | quote }}}
         - {name: RUST_LOG, value: "info,kube=warn"}
         ports:
